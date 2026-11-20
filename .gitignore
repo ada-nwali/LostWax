@@ -1,0 +1,24 @@
+# env
+.env
+.env.*
+!.env.example
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+contracts/deployments/31337.json
+
+# next
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+
+# os / editors
+.DS_Store
+.vscode/
+.idea/
+*.log
