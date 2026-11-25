@@ -1,0 +1,50 @@
+# Demo keeper: swaps on every pool, recenters strategies whose rule fired, casts qualified
+# trials and seeds first deposits. Runs on GitHub's servers, no backend needed.
+# Setup: repo Settings → Secrets and variables → Actions → New secret PRIVATE_KEY (testnet key).
+name: keeper
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # GitHub may start scheduled runs a few minutes late
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: "Swap rounds per pool"
+        default: "3"
+
+concurrency:
+  group: keeper # one run at a time, so transactions never fight over the nonce
+  cancel-in-progress: false
+
+jobs:
+  activity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Cache deps and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            contracts/lib
+            contracts/out
+            contracts/cache
+          key: forge-${{ hashFiles('contracts/Makefile', 'contracts/foundry.toml', 'contracts/src/**', 'contracts/script/**') }}
+
+      - name: Install deps
+        run: test -d lib/v4-periphery || make install
+
+      - name: Run keeper
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          ROUNDS: ${{ inputs.rounds || '3' }}
+        run: |
+          forge script script/Activity.s.sol \
+            --rpc-url https://sepolia.unichain.org \
+            --broadcast --slow --gas-estimate-multiplier 200
