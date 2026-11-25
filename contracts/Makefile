@@ -22,10 +22,10 @@ test:
 	FOUNDRY_DISABLE_CODE_SIZE_LIMIT=true forge test -vv
 
 deploy:
-	forge script script/Deploy.s.sol --rpc-url $(RPC) --broadcast --slow
+	forge script script/Deploy.s.sol --rpc-url $(RPC) --broadcast --slow --gas-estimate-multiplier 200
 
 activity:
-	forge script script/Activity.s.sol --rpc-url $(RPC) --broadcast --slow
+	forge script script/Activity.s.sol --rpc-url $(RPC) --broadcast --slow --gas-estimate-multiplier 200
 
 clean:
 	forge clean
