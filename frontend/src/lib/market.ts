@@ -46,8 +46,20 @@ export const wei = (v: bigint) => Number(v) / 1e18;
 
 export function fmt(n: number, max = 2) {
   if (!Number.isFinite(n)) return "–";
-  const digits = Math.abs(n) >= 1000 ? 0 : Math.abs(n) >= 1 ? max : 4;
-  return n.toLocaleString("en-US", { maximumFractionDigits: digits });
+  const a = Math.abs(n);
+  if (a === 0) return "0";
+  // below 1, keep three significant digits so small amounts never read as 0
+  if (a < 1) return n.toLocaleString("en-US", { maximumSignificantDigits: 3 });
+  return n.toLocaleString("en-US", { maximumFractionDigits: a >= 1000 ? 0 : max });
+}
+
+/**
+ * Alpha vs the lazy LP in fractional bps, from the 1e18 indices. The contract's alphaBps
+ * is a whole number, so a young vault a fraction of a bp ahead would read as 0.
+ */
+export function alphaOf(s: { strategyIndex: bigint; benchIndex: bigint }) {
+  if (s.benchIndex === 0n) return 0;
+  return Number(((s.strategyIndex - s.benchIndex) * 10n ** 10n) / s.benchIndex) / 1e6;
 }
 
 export const fmtPrice = (n: number) =>
@@ -55,7 +67,12 @@ export const fmtPrice = (n: number) =>
 
 export function fmtBps(bps: bigint | number) {
   const v = Number(bps) / 100;
-  return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
+  const a = Math.abs(v);
+  if (a === 0) return "0.00%";
+  if (a < 0.0001) return `${v > 0 ? "+" : "-"}<0.0001%`;
+  // more decimals as the number shrinks, so early alpha is visible
+  const d = a >= 10 ? 1 : a >= 0.1 ? 2 : a >= 0.001 ? 3 : 4;
+  return `${v > 0 ? "+" : ""}${v.toFixed(d)}%`;
 }
 
 export const shortAddr = (a: string) => `${a.slice(0, 5)}…${a.slice(-4)}`;

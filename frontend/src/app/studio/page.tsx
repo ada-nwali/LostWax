@@ -8,7 +8,7 @@ import { CastCeremony } from "@/components/CastCeremony";
 import { ConnectButton } from "@/components/Header";
 import { hookAbi, RULE_LABEL, Rule, Stage, type StrategyView } from "@/lib/contracts";
 import { useNow, useStrategies, useTx } from "@/lib/hooks";
-import { fmtBps, fmtDuration, fmtPrice, price01, quotePerBase, ticksFromPrices, trialProgress } from "@/lib/market";
+import { alphaOf, fmtBps, fmtDuration, fmtPrice, price01, quotePerBase, ticksFromPrices, trialProgress } from "@/lib/market";
 import { chain } from "@/lib/wagmi";
 import { baseIsToken0, HOOK, IS_DEPLOYED, POOLS, poolForKey, poolId, poolKey, TRIAL_DURATION } from "@/config/pools";
 
@@ -184,7 +184,7 @@ function WaxCard({ s }: { s: StrategyView }) {
   const [ceremony, setCeremony] = useState(false);
   const trial = trialProgress(Number(s.createdAt), Number(s.trialEndsAt), now);
   const pool = poolForKey(s.key);
-  const alpha = Number(s.alphaBps);
+  const alpha = alphaOf(s);
 
   const cast = async () => {
     await send("Cast in bronze", { address: HOOK, abi: hookAbi, functionName: "cast", args: [s.id] });

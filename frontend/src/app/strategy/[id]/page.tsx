@@ -11,7 +11,7 @@ import { CastCeremony } from "@/components/CastCeremony";
 import { ConnectButton } from "@/components/Header";
 import { erc20Abi, hookAbi, RULE_LABEL, Rule, Stage, type StrategyView } from "@/lib/contracts";
 import { useApprove, useHistory, useMarket, useNow, usePositions, useStrategy, useTx } from "@/lib/hooks";
-import { ago, fmt, fmtBps, fmtDuration, fmtPrice, rangeInQuote, shortAddr, ticksFromPrices, trialProgress, unitAmounts, wei } from "@/lib/market";
+import { alphaOf, ago, fmt, fmtBps, fmtDuration, fmtPrice, rangeInQuote, shortAddr, ticksFromPrices, trialProgress, unitAmounts, wei } from "@/lib/market";
 import { chain } from "@/lib/wagmi";
 import { HOOK, tokenAddress, type PoolConfig } from "@/config/pools";
 
@@ -41,7 +41,7 @@ export default function StrategyPage() {
     : s.stage === Stage.Wax
       ? `Wax · in trial · ${trial.done ? "trial complete" : `${trial.remaining} left`}`
       : "Retired";
-  const alpha = Number(s.alphaBps);
+  const alpha = alphaOf(s);
 
   return (
     <div className="container stack" style={{ padding: "40px 32px 96px", gap: 36 }}>
@@ -171,7 +171,7 @@ function WaxPanel({ s, trial }: { s: StrategyView; trial: ReturnType<typeof tria
   const { send, pending } = useTx();
   const [ceremony, setCeremony] = useState(false);
   const isCurator = !!address && address.toLowerCase() === s.curator.toLowerCase();
-  const alpha = Number(s.alphaBps);
+  const alpha = alphaOf(s);
 
   const cast = async () => {
     await send("Cast in bronze", { address: HOOK, abi: hookAbi, functionName: "cast", args: [s.id] });
@@ -316,7 +316,7 @@ function DepositPanel({ s, m }: { s: StrategyView; m: Market }) {
         <>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
             <span className="muted">Your shares are worth</span>
-            <span className="num">{fmt(shareValue)} {pool.quoteLabel}</span>
+            <span className="num">{pos.shares > 0n ? `${fmt(shareValue)} ${pool.quoteLabel}` : "No shares yet"}</span>
           </div>
           <div className="row" style={{ gap: 8 }}>
             {[25, 50, 75, 100].map((p) => (

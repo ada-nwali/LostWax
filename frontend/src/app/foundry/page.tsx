@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Plaque } from "@/components/Plaque";
 import { Stage, type StrategyView } from "@/lib/contracts";
 import { useMarket, useNow, useStrategies } from "@/lib/hooks";
-import { fmt, fmtBps, shortAddr, trialProgress } from "@/lib/market";
+import { alphaOf, fmt, fmtBps, shortAddr, trialProgress } from "@/lib/market";
 import { IS_DEPLOYED } from "@/config/pools";
 
 type Filter = "all" | "bronze" | "wax";
@@ -17,7 +17,7 @@ export default function Foundry() {
   const live = strategies.filter((s) => s.stage === Stage.Wax || s.stage === Stage.Bronze);
   const shown = live
     .filter((s) => filter === "all" || (filter === "bronze" ? s.stage === Stage.Bronze : s.stage === Stage.Wax))
-    .sort((a, b) => b.stage - a.stage || Number(b.alphaBps - a.alphaBps));
+    .sort((a, b) => b.stage - a.stage || alphaOf(b) - alphaOf(a));
 
   return (
     <div className="container stack" style={{ padding: "64px 32px 96px", gap: 36 }}>
@@ -59,7 +59,7 @@ function StrategyCard({ s }: { s: StrategyView }) {
   const now = useNow();
   const bronze = s.stage === Stage.Bronze;
   const trial = trialProgress(Number(s.createdAt), Number(s.trialEndsAt), now);
-  const alpha = Number(s.alphaBps);
+  const alpha = alphaOf(s);
 
   return (
     <div className="card reveal" style={{ flex: "1 1 340px", maxWidth: 420, minWidth: 0, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
