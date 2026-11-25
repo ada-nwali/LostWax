@@ -95,6 +95,31 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <section className="container section stack" style={{ gap: 48 }}>
+        <div className="stack" style={{ gap: 12, maxWidth: 640 }}>
+          <div className="eyebrow">Roadmap</div>
+          <h2 className="h2">From testnet foundry to mainnet vaults</h2>
+        </div>
+        <div className="row">
+          {ROADMAP.map((r) => (
+            <div key={r.phase} className={`card stack${r.now ? " card-hot" : ""}`} style={{ flex: "1 1 240px", minWidth: 0, padding: 28, gap: 14 }}>
+              <div className="label" style={{ color: r.now ? "var(--gold)" : "var(--wax)" }}>{r.phase} · {r.when}</div>
+              <h3 style={{ margin: 0, fontSize: 19, fontWeight: 600, color: "var(--ink)" }}>{r.title}</h3>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 15, lineHeight: 1.7, color: "var(--muted)" }}>
+                {r.items.map((i) => <li key={i}>{i}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
     </>
   );
 }
+
+const ROADMAP = [
+  { phase: "Phase 1", when: "Live now", now: true, title: "Testnet foundry", items: ["Wax trials scored on real swaps", "Bronze vaults with deposits and withdrawals", "Alpha-only curator fee"] },
+  { phase: "Phase 2", when: "Next", now: false, title: "Harden the hook", items: ["TWAP pricing for valuation", "Vault shares as ERC-20 tokens", "Independent security audit"] },
+  { phase: "Phase 3", when: "Then", now: false, title: "Mainnet launch", items: ["Unichain mainnet with real pools", "Curator profiles with full on-chain records", "More rebalance rules"] },
+  { phase: "Phase 4", when: "Later", now: false, title: "Open the market", items: ["Vault shares usable across DeFi", "Curator leaderboards and discovery", "Any v4 pool, any chain with v4"] },
+];
