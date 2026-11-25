@@ -35,7 +35,7 @@ lostwax/
 │   │   ├── Deploy.s.sol            tokens, faucet, routers, hook (CREATE2-mined), 4 pools, seed trials
 │   │   ├── Activity.s.sol          demo keeper: swaps, recenters, casts
 │   │   └── Config.sol              shared market config
-│   └── test/                       18 tests incl. full deploy + keeper run
+│   └── test/                       31 tests (incl. fuzz) + full deploy + keeper run
 ├── frontend/             Next.js 14 app (wagmi + viem)
 │   └── src/app/          /  /foundry  /strategy/[id]  /studio  /portfolio
 └── docs/
@@ -54,7 +54,7 @@ Requirements: [Foundry](https://book.getfoundry.sh), Node 18+, git, a wallet wit
 cd contracts
 make install          # pinned forge-std + v4-periphery (brings v4-core)
 make build
-make test             # 18 passing
+make test             # 31 passing
 cp .env.example .env  # add PRIVATE_KEY
 make deploy           # Unichain Sepolia
 ```
@@ -70,7 +70,7 @@ What it deploys:
 
 Trial length defaults to 30 minutes on testnet (`TRIAL_DURATION`), so a cast can happen during a live demo.
 
-To keep the demo moving, run the keeper every few minutes. It round-trips swaps on every pool, recenters strategies whose rule fired and casts qualified trials you own:
+To keep the demo moving, run the keeper every few minutes. It round-trips swaps on every pool, recenters strategies whose rule fired, casts qualified trials you own and seeds a first deposit into your empty bronze vaults (`SEED_DEPOSIT=false` to skip):
 
 ```bash
 make activity         # ROUNDS=5 make activity for more volume
@@ -102,12 +102,13 @@ Deploy to Vercel: import the repo, set the root directory to `frontend`, no env 
 | Original idea | On-chain *audition* for managers: scored against a lazy LP inside the hook before they can take a deposit, and paid on alpha only. |
 | Unique execution | Shadow positions accrue from `feeGrowthGlobal` in `afterSwap`, no oracle or off-chain scorer. One hook covers scoring, custody, guardrails and fees. |
 | Impact | Verifiable curation for depositors, a path in for skilled LPs without capital, deeper managed liquidity for v4 pools. |
-| Functionality | 18 Foundry tests, including the real deploy and keeper scripts end to end. Live app on Unichain Sepolia. |
+| Functionality | 31 Foundry tests (incl. fuzzing), including the real deploy and keeper scripts end to end. Live app on Unichain Sepolia. |
 | Presentation | [`docs/DEMO_VIDEO.md`](docs/DEMO_VIDEO.md) and [`docs/LostWax-Pitch-Deck.pptx`](docs/LostWax-Pitch-Deck.pptx). |
 
 ## Known limits (testnet build)
 
-- Valuation uses spot price; a TWAP is the next step to harden scoring and `recenter` against manipulation.
+- Valuation uses spot price. The hook refuses price-sensitive actions (sculpt, cast, deposit, rebalance, recenter) when the tick has moved more than 200 ticks inside the current block, and skips the alpha fee in that case, so flash manipulation is blocked; a price held across blocks is not. A TWAP is the next step. Withdrawals are never blocked.
+- Vault rebalance swaps are capped at 100 ticks of impact; anything unfilled stays idle in the vault.
 - A wax shadow is a *marginal* position: it doesn't dilute the fees it is scored on. Fine for ranking, slightly generous for very large strategies.
 - Shares are internal balances, not ERC-20s yet.
 - Not audited. Testnet only.
@@ -115,4 +116,3 @@ Deploy to Vercel: import the repo, set the root directory to `frontend`, no env 
 ## License
 
 MIT
-# LostWax

@@ -19,7 +19,9 @@ Every v4 pool tracks `feeGrowthGlobal0/1X128`: fees earned per unit of in-range 
 2. for each wax strategy in the pool, if the tick was inside its range **before and after** the swap: `fees += L × Δg / 2¹²⁸`
 3. saves the new tick and fee growth
 
-That is the same accounting a real position uses, so a wax model earns what a marginal position in that range would have earned. Up to 16 strategies are tracked per pool to keep swap gas bounded.
+That is the same accounting a real position uses, so a wax model earns what a marginal position in that range would have earned. Up to 16 wax trials are tracked per pool to keep swap gas bounded. Casting frees the slot; the vault moves to a separate list (up to 8 per pool) that only takes chart snapshots. Anyone can retire a trial that ended behind the lazy LP, or one left uncast for a second trial length.
+
+v4 does not call a hook for swaps the hook makes itself, so after each vault rebalance swap the hook runs the same accounting step by hand. Pool state never drifts from the PoolManager's.
 
 **Sizing.** Both the wax shadow and the lazy LP start at the same value (`NOTIONAL`, in token1 units). Value is linear in liquidity, so `L = NOTIONAL / value(1e18 liquidity in range)`.
 
@@ -79,6 +81,10 @@ Next.js 14 App Router with wagmi and viem, injected wallets only. Reads go throu
 
 ## Security notes
 
-- Spot pricing is the main open risk (scoring, share pricing, recenter swaps). Next: TWAP from an oracle hook or the pool's own observations.
-- Vault rebalance swaps through its own pool, so a large vault in a thin pool pays impact and could be sandwiched around a permissionless recenter. The `maxTickMove` clamp and cooldown limit this.
+- **Same-block price guard.** On the first swap of each block the hook stores the tick the block started at. `sculpt`, `cast`, `deposit`, `rebalance`, `recenter` and a third-party `retire` revert with `PriceMoved` if the tick is more than `MAX_TICK_DEVIATION` (200) away from it. The alpha fee is skipped instead of reverting, so `withdraw` always works. This blocks flash-loan style manipulation; a price held across blocks pays arbitrage and is not caught.
+- Spot pricing is still the main open risk beyond that. Next: a TWAP from an oracle hook or the pool's own observations.
+- Vault rebalance swaps go through the vault's own pool with a price limit of `MAX_SWAP_TICKS` (100) from spot; whatever does not fill stays idle. The `maxTickMove` clamp and cooldown also limit sandwiching around a permissionless recenter.
+- State-changing vault functions carry a transient-storage reentrancy lock on top of PoolManager's own unlock lock.
+- Pools with native ETH are not registered (custody uses ERC-20 transfers). Any ERC-20 pool initialised with this hook is registered; the app only lists the configured pools.
+- Only `afterInitialize` and `afterSwap` are implemented. The other `IHooks` functions are not, which keeps the contract under the 24 KB limit; their permission bits are off, so the PoolManager never calls them.
 - Test tokens and the faucet are for testnet only.
