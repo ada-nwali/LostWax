@@ -7,7 +7,7 @@ import { parseUnits } from "viem";
 import { ConnectButton } from "@/components/Header";
 import { faucetAbi, hookAbi, Stage, swapRouterAbi, type StrategyView } from "@/lib/contracts";
 import { useApprove, usePositions, useStrategies, useTx } from "@/lib/hooks";
-import { fmt, fmtBps, price01, token1ToQuote, wei } from "@/lib/market";
+import { alphaOf, fmt, fmtBps, price01, token1ToQuote, wei } from "@/lib/market";
 import { chain } from "@/lib/wagmi";
 import { baseIsToken0, FAUCET, HOOK, POOLS, poolForKey, poolKey, SWAP_ROUTER, tokenAddress } from "@/config/pools";
 
@@ -38,7 +38,7 @@ export default function Portfolio() {
 
   const total = rows.reduce((a, r) => a + r.value, 0);
   const cost = rows.reduce((a, r) => a + r.cost, 0);
-  const ahead = total > 0 ? rows.reduce((a, r) => a + Number(r.s.alphaBps) * r.value, 0) / total : 0;
+  const ahead = total > 0 ? rows.reduce((a, r) => a + alphaOf(r.s) * r.value, 0) / total : 0;
 
   const mineAsCurator = bronze.filter((s) => address && s.curator.toLowerCase() === address.toLowerCase());
   const claimable = mineAsCurator.filter((s) => s.pendingFee > 0n);
@@ -69,12 +69,12 @@ export default function Portfolio() {
           <div className="row" style={{ gap: 16 }}>
             <div className="card stat" style={{ flex: "1 1 240px", padding: 24 }}>
               <div className="stat-k">Value of your shares</div>
-              <div className="stat-v" style={{ fontSize: 34, color: "var(--ink)" }}>{fmt(total)} USD</div>
+              <div className="stat-v" style={{ fontSize: 34, color: "var(--ink)" }}>{rows.length ? `${fmt(total)} USD` : "–"}</div>
             </div>
             <div className="card stat" style={{ flex: "1 1 240px", padding: 24 }}>
               <div className="stat-k">Gain since deposit</div>
               <div className={`stat-v ${total - cost >= 0 ? "" : "down"}`} style={{ fontSize: 34, color: total - cost >= 0 ? "var(--ink)" : undefined }}>
-                {total - cost >= 0 ? "+" : ""}{fmt(total - cost)} USD
+                {rows.length ? `${total - cost >= 0 ? "+" : ""}${fmt(total - cost)} USD` : "–"}
               </div>
             </div>
             <div className="card stat" style={{ flex: "1 1 240px", padding: 24 }}>
@@ -101,7 +101,7 @@ export default function Portfolio() {
                         <td><Link href={`/strategy/${r.s.id}`} className="serif" style={{ fontSize: 22 }}>{r.s.name}</Link></td>
                         <td className="muted">{poolForKey(r.s.key)?.label}</td>
                         <td className="r num">{fmt(r.value)} {poolForKey(r.s.key)?.quoteLabel}</td>
-                        <td className={`r num ${Number(r.s.alphaBps) >= 0 ? "up" : "down"}`}>{fmtBps(r.s.alphaBps)}</td>
+                        <td className={`r num ${alphaOf(r.s) >= 0 ? "up" : "down"}`}>{fmtBps(alphaOf(r.s))}</td>
                         <td className="r">
                           <button
                             className="btn btn-outline"
@@ -126,7 +126,7 @@ export default function Portfolio() {
           <div className="row">
             <div className="card card-pad stack" style={{ flex: "1 1 340px", minWidth: 0, gap: 14 }}>
               <div className="eyebrow" style={{ letterSpacing: "0.14em" }}>Curator earnings</div>
-              <div className="num" style={{ fontSize: 30, fontWeight: 600, color: "var(--ink)" }}>{fmt(claimTotal)} USD claimable</div>
+              <div className="num" style={{ fontSize: 30, fontWeight: 600, color: "var(--ink)" }}>{claimTotal > 0 ? `${fmt(claimTotal)} USD claimable` : "Nothing to claim yet"}</div>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "var(--muted)" }}>
                 {mineAsCurator.length
                   ? `Your share of the outperformance on ${mineAsCurator.map((s) => s.name).join(", ")} since your last claim. Paid as vault shares you can withdraw.`
