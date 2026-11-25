@@ -77,7 +77,7 @@ Each strategy keeps a 96-point ring buffer of `(time, strategyIndex, lazyIndex, 
 
 ## Frontend
 
-Next.js 14 App Router with wagmi and viem, injected wallets only. Reads go through `getStrategies`, `getStrategy` and `getHistory` (one call per page) polled every 6 seconds. The deploy script writes `frontend/src/config/deployment.json`; pool definitions in `src/config/pools.ts` mirror `script/Config.sol`.
+Next.js 14 App Router with wagmi and viem, injected wallets only. Reads go through `getStrategies`, `getStrategy` and `getHistory` (one call per page) polled every 6 seconds. Writes pad the gas estimate by 1.5×, because a swap can land in the block where `afterSwap` writes chart snapshots for every strategy in the pool, which an estimate from a block earlier misses. Alpha is shown from the 1e18 indices, not the whole-number `alphaBps`, so young vaults don't read as 0%. The deploy script writes `frontend/src/config/deployment.json`; pool definitions in `src/config/pools.ts` mirror `script/Config.sol`.
 
 ## Security notes
 
