@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useConfig, useReadContract, useReadContracts, useWriteContract } from "wagmi";
-import { waitForTransactionReceipt } from "wagmi/actions";
+import { getPublicClient, waitForTransactionReceipt } from "wagmi/actions";
 import { BaseError, ContractFunctionRevertedError, maxUint256, type Abi, type Address } from "viem";
 import { erc20Abi, hookAbi, type Snapshot, type StrategyView } from "./contracts";
 import { HOOK, IS_DEPLOYED, poolForKey, baseIsToken0 } from "@/config/pools";
@@ -122,6 +122,7 @@ type Write = { address: Address; abi: Abi; functionName: string; args?: readonly
 /** write + wait + toast, one call */
 export function useTx() {
   const config = useConfig();
+  const { address: account } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const toast = useToast();
   const [pending, setPending] = useState<string | null>(null);
@@ -130,7 +131,11 @@ export function useTx() {
     async (label: string, req: Write) => {
       setPending(label);
       try {
-        const hash = await writeContractAsync(req as Parameters<typeof writeContractAsync>[0]);
+        // afterSwap may write history snapshots in the block that lands, which a wallet
+        // estimate made a block earlier can miss, so pad the estimate by half
+        const client = getPublicClient(config);
+        const est = await client!.estimateContractGas({ ...req, account } as Parameters<NonNullable<typeof client>["estimateContractGas"]>[0]);
+        const hash = await writeContractAsync({ ...req, gas: (est * 3n) / 2n } as Parameters<typeof writeContractAsync>[0]);
         const receipt = await waitForTransactionReceipt(config, { hash });
         if (receipt.status !== "success") throw new Error("Transaction reverted");
         toast.show({ text: `${label} confirmed`, hash });
@@ -142,7 +147,7 @@ export function useTx() {
         setPending(null);
       }
     },
-    [config, writeContractAsync, toast],
+    [config, account, writeContractAsync, toast],
   );
 
   return { send, pending };
